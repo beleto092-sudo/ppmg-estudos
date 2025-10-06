@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PPMG — Estudos</title>
+  <style>
+    :root {
+      --bg: #0f0f1a;
+      --card: #1a1a2e;
+      --accent: #7c3aed;
+      --text: #f1f1f1;
+      --muted: #94a3b8;
+    }
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #0f0f1a, #1a1a2e);
+      color: var(--text);
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 900px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    h1 {
+      font-size: 1.5rem;
+      color: var(--accent);
+      margin: 0;
+    }
+    .clock {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 12px 16px;
+      text-align: right;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    }
+    .time {
+      font-size: 28px;
+      font-weight: bold;
+    }
+    .date {
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .planner, .pomodoro {
+      background: var(--card);
+      padding: 20px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 900px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    }
+    .planner h2, .pomodoro h2 {
+      margin-top: 0;
+      color: var(--accent);
+    }
+    .new-task {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    input, select, button {
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 15px;
+    }
+    input, select {
+      flex: 1;
+      background: #111122;
+      color: var(--text);
+    }
+    button {
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    ul.tasks {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    li.task {
+      background: rgba(255,255,255,0.05);
+      padding: 10px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    li.task.done {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+    .timer-display {
+      font-size: 2rem;
+      font-weight: bold;
+      text-align: center;
+      margin: 15px 0;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>PPMG — Estudos</h1>
+    <div class="clock">
+      <div class="time" id="time">00:00:00</div>
+      <div class="date" id="date">--/--/----</div>
+    </div>
+  </header>
+
+  <div class="planner">
+    <h2>Planejamento Diário</h2>
+    <div class="new-task">
+      <input type="text" id="taskInput" placeholder="Nova tarefa..." />
+      <button onclick="addTask()">Adicionar</button>
+    </div>
+    <ul id="taskList" class="tasks"></ul>
+  </div>
+
+  <div class="pomodoro">
+    <h2>Modo Foco (Pomodoro)</h2>
+    <div class="timer-display" id="pomodoroTimer">25:00</div>
+    <button onclick="startPomodoro()">Iniciar</button>
+    <button onclick="resetPomodoro()">Resetar</button>
+  </div>
+
+  <script>
+    function updateClock(){
+      const now = new Date();
+      const time = now.toLocaleTimeString('pt-BR');
+      const date = now.toLocaleDateString('pt-BR');
+      document.getElementById('time').textContent = time;
+      document.getElementById('date').textContent = date;
+    }
+    setInterval(updateClock,1000);
+    updateClock();
+
+    const taskList = document.getElementById('taskList');
+    const tasks = JSON.parse(localStorage.getItem('tasksPPMG')) || [];
+
+    function renderTasks(){
+      taskList.innerHTML = '';
+      tasks.forEach((task,i)=>{
+        const li=document.createElement('li');
+        li.className='task'+(task.done?' done':'');
+        li.innerHTML=`<span>${task.text}</span><button onclick="toggleTask(${i})">✔️</button>`;
+        taskList.appendChild(li);
+      });
+      localStorage.setItem('tasksPPMG',JSON.stringify(tasks));
+    }
+
+    function addTask(){
+      const input=document.getElementById('taskInput');
+      if(input.value.trim()!==''){
+        tasks.push({text:input.value.trim(),done:false});
+        input.value='';
+        renderTasks();
+      }
+    }
+    function toggleTask(i){
+      tasks[i].done=!tasks[i].done;
+      renderTasks();
+    }
+    renderTasks();
+
+    let pomodoroTime=25*60;
+    let interval;
+    function startPomodoro(){
+      clearInterval(interval);
+      interval=setInterval(()=>{
+        pomodoroTime--;
+        if(pomodoroTime<=0){clearInterval(interval);alert('Tempo encerrado!');}
+        updatePomodoro();
+      },1000);
+    }
+    function resetPomodoro(){
+      clearInterval(interval);
+      pomodoroTime=25*60;
+      updatePomodoro();
+    }
+    function updatePomodoro(){
+      const min=Math.floor(pomodoroTime/60).toString().padStart(2,'0');
+      const sec=(pomodoroTime%60).toString().padStart(2,'0');
+      document.getElementById('pomodoroTimer').textContent=`${min}:${sec}`;
+    }
+    updatePomodoro();
+  </script>
+</body>
+</html>
